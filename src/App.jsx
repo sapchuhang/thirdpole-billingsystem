@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Layout from './components/Layout';
 import MenuGrid from './components/MenuGrid';
 import Cart from './components/Cart';
 import BillModal from './components/BillModal';
-import Settings from './components/Settings';
-import Orders from './components/Orders';
 import Login from './components/Login';
-import MenuEditor from './components/MenuEditor';
+import ErrorBoundary from './components/ErrorBoundary';
+import Loading from './components/Loading';
 import { getMenuItems, saveMenuItems, getCategories, saveCategories } from './data/menu';
-import Dashboard from './components/Dashboard';
-import TableManager from './components/TableManager';
 import { updateTableStatus } from './data/tables';
+
+// Lazy load heavy components
+const Settings = lazy(() => import('./components/Settings'));
+const Orders = lazy(() => import('./components/Orders'));
+const MenuEditor = lazy(() => import('./components/MenuEditor'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const TableManager = lazy(() => import('./components/TableManager'));
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -180,21 +184,25 @@ function App() {
   }
 
   return (
-    <Layout currentView={currentView} onViewChange={setCurrentView} onLogout={handleLogout}>
-      {renderContent()}
+    <ErrorBoundary>
+      <Layout currentView={currentView} onViewChange={setCurrentView} onLogout={handleLogout}>
+        <Suspense fallback={<Loading />}>
+          {renderContent()}
+        </Suspense>
 
-      {isCheckoutOpen && (
-        <BillModal
-          items={cartItems}
-          subtotal={subtotal}
-          tax={tax}
-          total={total}
-          settings={settings}
-          onClose={() => setIsCheckoutOpen(false)}
-          onFinalize={handleFinalizeOrder}
-        />
-      )}
-    </Layout>
+        {isCheckoutOpen && (
+          <BillModal
+            items={cartItems}
+            subtotal={subtotal}
+            tax={tax}
+            total={total}
+            settings={settings}
+            onClose={() => setIsCheckoutOpen(false)}
+            onFinalize={handleFinalizeOrder}
+          />
+        )}
+      </Layout>
+    </ErrorBoundary>
   );
 }
 

@@ -348,6 +348,7 @@ button {
   font-size: var(--font-size-lg);
   font-weight: 700;
   background: var(--gradient-success);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
