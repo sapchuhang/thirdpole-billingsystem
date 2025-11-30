@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import MenuGrid from './components/MenuGrid';
 import Cart from './components/Cart';
@@ -6,7 +7,7 @@ import BillModal from './components/BillModal';
 import Login from './components/Login';
 import ErrorBoundary from './components/ErrorBoundary';
 import Loading from './components/Loading';
-import { getMenuItems, saveMenuItems, getCategories, saveCategories } from './data/menu';
+import { getMenuItems, saveMenuItems, getCategories } from './data/menu';
 import { updateTableStatus } from './data/tables';
 
 // Lazy load heavy components
@@ -31,6 +32,9 @@ function App() {
     serviceCharge: 10,
   });
 
+  const [activeOrders, setActiveOrders] = useState({}); // { tableId: [items] }
+  const isSwitchingTable = React.useRef(false);
+
   useEffect(() => {
     const savedSettings = localStorage.getItem('restaurantSettings');
     if (savedSettings) {
@@ -39,9 +43,44 @@ function App() {
     // Load menu items and categories
     setMenuItems(getMenuItems());
     setCategories(getCategories());
+
+    // Load active orders
+    const savedActiveOrders = localStorage.getItem('activeOrders');
+    if (savedActiveOrders) {
+      setActiveOrders(JSON.parse(savedActiveOrders));
+    }
   }, []);
 
+  // Save active orders whenever cart changes
+  useEffect(() => {
+    if (isSwitchingTable.current) {
+      isSwitchingTable.current = false;
+      return;
+    }
+
+    if (selectedTable) {
+      setActiveOrders(prev => {
+        const newOrders = { ...prev, [selectedTable.id]: cartItems };
+        localStorage.setItem('activeOrders', JSON.stringify(newOrders));
+        return newOrders;
+      });
+
+      // Update table status
+      if (cartItems.length > 0) {
+        updateTableStatus(selectedTable.id, 'occupied');
+      } else {
+        // If cart is empty for a selected table, mark it as free
+        updateTableStatus(selectedTable.id, 'free');
+      }
+    }
+  }, [cartItems, selectedTable]);
+
   const addToOrder = (item) => {
+    if (!selectedTable) {
+      toast.error('Please select a table first');
+      return;
+    }
+
     setCartItems(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
@@ -52,18 +91,26 @@ function App() {
   };
 
   const updateQuantity = (itemId, newQty) => {
+    if (!selectedTable) return;
+
     if (newQty < 1) {
       removeFromOrder(itemId);
       return;
     }
+
     setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity: newQty } : i));
   };
 
   const removeFromOrder = (itemId) => {
+    if (!selectedTable) return;
     setCartItems(prev => prev.filter(i => i.id !== itemId));
   };
 
   const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      toast.error('Cart is empty');
+      return;
+    }
     setIsCheckoutOpen(true);
   };
 
@@ -75,7 +122,9 @@ function App() {
       subtotal,
       tax,
       total,
-      settingsSnapshot: settings
+      settingsSnapshot: settings,
+      tableId: selectedTable?.id,
+      tableName: selectedTable?.name
     };
 
     const savedOrders = JSON.parse(localStorage.getItem('orderHistory') || '[]');
@@ -83,12 +132,19 @@ function App() {
 
     if (selectedTable) {
       updateTableStatus(selectedTable.id, 'free');
+
+      // Clear active order for this table
+      const newActiveOrders = { ...activeOrders };
+      delete newActiveOrders[selectedTable.id];
+      setActiveOrders(newActiveOrders);
+      localStorage.setItem('activeOrders', JSON.stringify(newActiveOrders));
+
       setSelectedTable(null);
     }
 
     setCartItems([]);
     setIsCheckoutOpen(false);
-    alert('Order completed and saved!');
+    toast.success('Order completed and saved!');
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -106,8 +162,12 @@ function App() {
   };
 
   const handleTableSelect = (table) => {
+    isSwitchingTable.current = true;
     setSelectedTable(table);
-    updateTableStatus(table.id, 'occupied');
+    // Load items for this table
+    const tableItems = activeOrders[table.id] || [];
+    setCartItems(tableItems);
+
     setCurrentView('pos');
   };
 
@@ -185,6 +245,29 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#1e293b',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Layout currentView={currentView} onViewChange={setCurrentView} onLogout={handleLogout}>
         <Suspense fallback={<Loading />}>
           {renderContent()}

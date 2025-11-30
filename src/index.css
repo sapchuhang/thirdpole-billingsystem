@@ -294,6 +294,8 @@ button {
   overflow-y: auto;
   padding: var(--spacing-xs);
   padding-bottom: var(--spacing-xl);
+  flex: 1;
+  min-height: 0;
 }
 
 .menu-card {
@@ -365,6 +367,16 @@ button {
   flex-direction: column;
   height: 100%;
   gap: var(--spacing-md);
+}
+
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding-right: var(--spacing-xs);
 }
 
 .cart-item {

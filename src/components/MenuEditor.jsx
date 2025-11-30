@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { saveCategories } from '../data/menu';
 
 const MenuEditor = ({ menuItems, categories, onSave, onCategoryUpdate }) => {
@@ -162,8 +162,23 @@ const MenuEditor = ({ menuItems, categories, onSave, onCategoryUpdate }) => {
         if (onCategoryUpdate) onCategoryUpdate();
     };
 
+    // Sync state with props
+    useEffect(() => {
+        setItems(menuItems);
+    }, [menuItems]);
+
+    useEffect(() => {
+        setCats(categories);
+    }, [categories]);
+
     return (
-        <div className="menu-editor" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="menu-editor" style={{
+            padding: '2rem',
+            maxWidth: '1200px',
+            margin: '0 auto',
+            height: '100%',
+            overflowY: 'auto'
+        }}>
             <h2 style={{ marginBottom: '2rem' }}>Menu Management</h2>
 
             {/* Tabs */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const Settings = ({ onSave }) => {
     const [settings, setSettings] = useState({
@@ -33,7 +34,7 @@ const Settings = ({ onSave }) => {
         e.preventDefault();
         localStorage.setItem('restaurantSettings', JSON.stringify(settings));
         if (onSave) onSave(settings);
-        alert('Settings saved successfully!');
+        toast.success('Settings saved successfully!');
     };
 
     const handlePinChange = (e) => {
@@ -46,23 +47,23 @@ const Settings = ({ onSave }) => {
         const storedPin = localStorage.getItem('staffPin') || '1234';
 
         if (pinData.currentPin !== storedPin) {
-            alert('Current PIN is incorrect!');
+            toast.error('Current PIN is incorrect!');
             return;
         }
 
         if (pinData.newPin.length < 4) {
-            alert('New PIN must be at least 4 digits!');
+            toast.error('New PIN must be at least 4 digits!');
             return;
         }
 
         if (pinData.newPin !== pinData.confirmPin) {
-            alert('New PIN and Confirm PIN do not match!');
+            toast.error('New PIN and Confirm PIN do not match!');
             return;
         }
 
         localStorage.setItem('staffPin', pinData.newPin);
         setPinData({ currentPin: '', newPin: '', confirmPin: '' });
-        alert('PIN changed successfully!');
+        toast.success('PIN changed successfully!');
     };
 
     const handleExport = () => {
@@ -77,7 +78,7 @@ const Settings = ({ onSave }) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = 'backup - ' + new Date().toISOString().split('T')[0] + '.json';
         a.click();
     };
 
